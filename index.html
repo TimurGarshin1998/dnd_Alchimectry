@@ -429,7 +429,7 @@ const BASE_EFFECTS = {
   },
   slow: {
     name: "Замедление",
-    power: 2,
+    power: 1,
     tiers: [
       { desc: "КС 12 Тел: скорость −10 фт на 1 минуту (повтор в конце хода)." },
       { desc: "КС 13 Тел: скорость −10 фт и −1d4 к инициативе на 1 минуту (повтор в конце хода)." },
@@ -521,17 +521,14 @@ const DEFAULT_RECIPES = [
   {
     id:"heal_any",
     kind:"effects",
-    name:"Зелье лечения",
+    name:"Зелье лечения (грейдируемое)",
     desc:"Эффект зависит от Tier (I–IV) и считается по экстракту “Лечение”.",
     power:1,
     baseDc:null,
     matchIngredients:null,
     matchEffects:["heal_minor"],
     imageFile:"potion_heal.png",
-    imageByTier:{"1":"small_potion_heal.png",
-                 "2":"potion_heal.png",
-                 "3":"big_potion_heal.png",
-                 "4":"epic_potion_heal.png"}
+    imageByTier:{"1":"small_potion_heal.png","2":"potion_heal.png","3":"big_potion_heal.png","4":"epic_potion_heal.png"}
   },
   {
     id:"brit_reflect",
@@ -653,9 +650,15 @@ document.getElementById("clearRetort").onclick = () => { state.retort=[]; saveLo
 
 document.getElementById("bagToRetort").onclick = () => {
   const canTake = Math.max(0, 3 - state.retort.length);
-  const moved = state.bag.splice(0, canTake);
+  const moved = [];
+  while (moved.length < canTake && state.bag.length) {
+    const id = state.bag.shift();
+    if (state.retort.includes(id)) continue;
+    moved.push(id);
+  }
   state.retort.push(...moved);
-  saveLocal("bag", state.bag); saveLocal("retort", state.retort);
+  saveLocal("bag", state.bag);
+  saveLocal("retort", state.retort);
   renderAll();
 };
 
@@ -1365,6 +1368,11 @@ function renderZone(zoneEl, container, ids, zoneName){
       if (zoneName === "bag") {
         if (state.retort.length >= 3) return;
         const [m] = state.bag.splice(idx, 1);
+        if (state.retort.includes(m)) {
+          state.bag.splice(idx, 0, m);
+          toast("Нельзя добавлять один и тот же ингредиент дважды в одну варку.");
+          return;
+        }
         state.retort.push(m);
       } else {
         const [m] = state.retort.splice(idx, 1);
@@ -1412,6 +1420,10 @@ function addToBag(id){
   renderAll();
 }
 function addToRetort(id){
+  if (state.retort.includes(id)) {
+    toast("Нельзя добавлять один и тот же ингредиент дважды в одну варку.");
+    return;
+  }
   if (state.retort.length >= 3) return;
   state.retort.push(id);
   saveLocal("retort", state.retort);
@@ -1438,20 +1450,28 @@ function computeBrew(ingredients, { labTier, maxEffects, timeMode }){
   if (exact) return finalizeBrewFromRecipe(exact, ingredients, { labTier, timeMode, support });
 
   // 2) recipe by effects
-  const effSet = new Set(ingredients.flatMap(i => i.effects || []));
-  const effRecipe = state.store.recipes.find(r => r.kind === "effects" && (r.matchEffects||[]).every(e => effSet.has(e)));
-  if (effRecipe) return finalizeBrewFromRecipe(effRecipe, ingredients, { labTier, timeMode, support });
+// IMPORTANT: matchEffects must be "active" (Skyrim): appear in 2+ selected ingredients.
+const counts = new Map();
+for (const ing of ingredients) {
+  for (const e of (ing.effects || [])) counts.set(e, (counts.get(e) || 0) + 1);
+}
+const intersect = [...counts.entries()]
+  .filter(([e,c]) => c >= 2)
+  .map(([e,_]) => e);
+const sharedSet = new Set(intersect);
+const effCandidates = state.store.recipes
+  .filter(r => r.kind === "effects")
+  .filter(r => (r.matchEffects||[]).length > 0 && (r.matchEffects||[]).every(e => sharedSet.has(e)));
+if (effCandidates.length) {
+  // choose the most specific/highest priority recipe
+  effCandidates.sort((a,b) => ((b.matchEffects||[]).length - (a.matchEffects||[]).length)
+    || ((b.power||0) - (a.power||0))
+    || (a.name||a.id).localeCompare((b.name||b.id), "ru"));
+  return finalizeBrewFromRecipe(effCandidates[0], ingredients, { labTier, timeMode, support });
+}
 
-  // 3) Skyrim-style: intersection of effects (>=2 ingredients share)
-  const counts = new Map();
-  for (const ing of ingredients) {
-    for (const e of (ing.effects || [])) counts.set(e, (counts.get(e) || 0) + 1);
-  }
-  const intersect = [...counts.entries()]
-    .filter(([e,c]) => c >= 2)
-    .map(([e,_]) => e);
-
-  if (intersect.length === 0) {
+// 3) Skyrim-style: intersection of effects (>=2 ingredients share)
+if (intersect.length === 0) {
     return { error: "Эффекты не пересекаются. Попробуй другой набор или создай рецепт." };
   }
 
@@ -1690,6 +1710,10 @@ function clampInt(n, lo, hi){
   if (!Number.isFinite(n)) return lo;
   return Math.max(lo, Math.min(hi, Math.round(n)));
 }
+function toast(msg){
+  alert(msg);
+}
+
 function downloadBlob(text, filename, mime){
   const blob = new Blob([text], {type:mime});
   const url = URL.createObjectURL(blob);

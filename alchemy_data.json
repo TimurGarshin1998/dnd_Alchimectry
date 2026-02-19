@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "exportedAt": "2026-02-19T09:23:27.892Z",
+  "exportedAt": "2026-02-19T11:45:48.564Z",
   "store": {
     "ingredients": [
       {
@@ -75,6 +75,21 @@
         "cost": 120,
         "imageFile": "mirror_salt.png",
         "extractPower": 3
+      },
+      {
+        "id": "rat_tail",
+        "name": "Крысиный хвост",
+        "rarity": "common",
+        "effects": [
+          "slow",
+          "speed",
+          "resist_cold",
+          "poison_basic"
+        ],
+        "desc": "",
+        "cost": 1,
+        "extractPower": 1,
+        "imageFile": "rat_tail.png"
       }
     ],
     "recipes": [
