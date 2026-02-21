@@ -1,6 +1,6 @@
 {
   "version": 5,
-  "exportedAt": "2026-02-19T11:45:48.564Z",
+  "exportedAt": "2026-02-21T06:47:50.731Z",
   "store": {
     "ingredients": [
       {
@@ -90,6 +90,36 @@
         "cost": 1,
         "extractPower": 1,
         "imageFile": "rat_tail.png"
+      },
+      {
+        "id": "blue_topaz",
+        "name": "Голубой топаз",
+        "rarity": "rare",
+        "effects": [
+          "reflect_melee_half",
+          "invisible",
+          "resist_cold",
+          "clarity"
+        ],
+        "desc": "Это драгоценный камень высокой твердости, популярный в ювелирных изделиях благодаря прозрачности и оттенкам от светло-голубого до темно-синего. Алхимики очень ценят.",
+        "cost": 500,
+        "extractPower": 3,
+        "imageFile": "blue_topaz.png"
+      },
+      {
+        "id": "essence_of_the_ghost",
+        "name": "Эсенция призрака",
+        "rarity": "uncommon",
+        "effects": [
+          "invisible",
+          "sleepiness",
+          "resist_cold",
+          "darkvision"
+        ],
+        "desc": "Всё что осталось от надоедливого полтергейста",
+        "cost": 50,
+        "extractPower": 2,
+        "imageFile": "essence_of_the_ghost.png"
       }
     ],
     "recipes": [
@@ -148,11 +178,37 @@
     ],
     "effects": {
       "reflect_melee_half": {
-        "name": "Брит: отражение удара",
+        "name": "Бритва: отражение удара",
         "power": 2,
         "desc": "Отражает часть урона в ближнем бою атакующему (грейд повышает риск/сложность/время; конкретика — в рецепте/лоре).",
         "imageFile": null,
         "imageByTier": null
+      },
+      "invisible": {
+        "name": "Невидимость",
+        "power": 3,
+        "desc": "Невидимое существо невозможно увидеть без помощи магии или особого чувства. С точки зрения скрытности существо считается сильно заслонённым. \nМестонахождение существа можно определить по шуму, который оно издаёт, или по оставленным им следам.\nБроски атаки по невидимому существу совершаются с помехой, а его броски атаки — с преимуществом.",
+        "tiers": [
+          {
+            "desc": "Невидимость 1 минута"
+          },
+          {
+            "desc": "Невидимость 10 мин"
+          },
+          {
+            "desc": "Невидимость 1 ч"
+          },
+          {
+            "desc": "Невидимость 24 ч"
+          }
+        ],
+        "imageFile": "potion_invisible.png",
+        "imageByTier": {
+          "1": "small_potion_invisible.png",
+          "2": "potion_invisible.png",
+          "3": "big_potion_invisible.png",
+          "4": "epic_potion_invisible.png"
+        }
       }
     }
   }

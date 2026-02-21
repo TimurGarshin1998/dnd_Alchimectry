@@ -555,7 +555,7 @@ const DEFAULT_RECIPES = [
 
 /* ========= State ========= */
 const state = {
-  store: loadStore(),
+  store: null,
   bag: loadLocal("bag", []),
   retort: loadLocal("retort", []),
   editingIngredientId: null,
@@ -586,6 +586,7 @@ function loadStore(){
     };
   }
 }
+
 function saveStore(){ localStorage.setItem(STORE_KEY, JSON.stringify(state.store)); }
 function loadLocal(k, fallback){
   try { return JSON.parse(localStorage.getItem("alchemy_"+k)) ?? fallback; } catch { return fallback; }
@@ -602,7 +603,54 @@ const elSearch = document.getElementById("search");
 const elRarityFilter = document.getElementById("rarityFilter");
 const elResult = document.getElementById("result");
 
-renderAll();
+initStore();
+
+/*========= Initialization & Store loading ========= */
+async function initStore(){
+  // 1. Если есть localStorage — используем его
+  const raw = localStorage.getItem(STORE_KEY);
+  if (raw) {
+    try {
+      state.store = JSON.parse(raw);
+      renderAll();
+      return;
+    } catch(e) {
+      console.warn("Ошибка чтения localStorage, пробуем JSON файл");
+    }
+  }
+
+  // 2. Пытаемся загрузить alchemy_data.json
+  try {
+    const response = await fetch("./alchemy_data.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("no json file");
+
+    const data = await response.json();
+
+    state.store = {
+      ingredients: (data.store?.ingredients || data.ingredients || []).map(normalizeIngredient),
+      recipes: data.store?.recipes || data.recipes || [],
+      effects: data.store?.effects || data.effects || {}
+    };
+
+    saveStore();
+    renderAll();
+    console.log("Загружены данные из alchemy_data.json");
+    return;
+  } catch (e) {
+    console.warn("alchemy_data.json не найден, используются DEFAULT");
+  }
+
+  // 3. Фоллбек — DEFAULT
+  state.store = {
+    ingredients: structuredClone(DEFAULT_INGREDIENTS).map(normalizeIngredient),
+    recipes: structuredClone(DEFAULT_RECIPES),
+    effects: structuredClone(DEFAULT_CUSTOM_EFFECTS)
+  };
+
+  saveStore();
+  renderAll();
+}
+
 
 /* ========= Top buttons ========= */
 document.getElementById("resetAll").onclick = () => {
